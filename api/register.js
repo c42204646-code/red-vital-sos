@@ -1,11 +1,9 @@
-﻿module.exports = async function(req, res) {
-    // Vercel usa el objeto "req" (petición) y "res" (respuesta)
+module.exports = async function(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Método no permitido" });
     }
 
     try {
-        // En Vercel, req.body ya viene convertido a objeto JSON automáticamente
         const datosUsuario = req.body; 
 
         const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -36,10 +34,10 @@
 
         if (!supabaseResponse.ok) {
             const errorText = await supabaseResponse.text();
-            return res.status(400).json({ error: "Fallo en Supabase al guardar", details: errorText });
+            console.error("Error BD:", errorText);
+            return res.status(400).json({ error: "Fallo en Supabase", details: errorText });
         }
 
-        // Respuesta exitosa
         return res.status(200).json({ success: true, id_generado: nuevoId });
 
     } catch (error) {
