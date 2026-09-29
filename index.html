@@ -21,6 +21,12 @@
             70% { box-shadow: 0 0 0 20px rgba(220, 38, 38, 0); }
             100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
         }
+        @media print {
+            body * { visibility: hidden; }
+            #qr-container, #qr-container * { visibility: visible; }
+            #qr-container { position: absolute; left: 0; top: 0; width: 100%; }
+            button, .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -82,9 +88,22 @@
             <h3 class="font-bold text-green-600 mb-4">¡Registro Exitoso!</h3>
             <div class="p-3 bg-white border-2 border-gray-200 rounded-xl shadow-sm mb-2" id="qrcode"></div>
             <p class="text-sm font-mono text-gray-600 mb-4" id="idMostrado"></p>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-900">
+            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-900 mb-6">
                 <i class="fa-solid fa-print mr-2"></i> Imprimir Etiqueta
             </button>
+
+            <!-- NUEVO BLOQUE: VINCULAR CALCOMANÍA FÍSICA -->
+            <div class="w-full pt-4 border-t border-gray-200 text-left no-print">
+                <h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-link text-blue-600 mr-1"></i> Vincular Calcomanía Física</h4>
+                <p class="text-xs text-gray-500 mb-3">Si tienes una calcomanía impresa (ej. moto-001), ingrésala aquí para asociarla:</p>
+                <div class="flex gap-2">
+                    <input type="text" id="inputStickerFisico" placeholder="Ej: moto-001" class="flex-1 px-3 py-2 border rounded-lg font-mono text-sm uppercase outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <button onclick="vincularStickerFisico()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition shadow">
+                        Vincular
+                    </button>
+                </div>
+                <p id="mensajeVinculacion" class="text-xs mt-2 font-semibold"></p>
+            </div>
         </div>
     </div>
 
@@ -126,6 +145,7 @@
         }
 
         let qrCodeObj = null;
+        let usuarioIdActual = null; // Variable global para guardar el ID del motorizado logueado
 
         // ==========================================
         // FUNCIÓN 1: REGISTRO (CONECTA CON LA API DE VERCEL)
@@ -146,7 +166,6 @@
             };
 
             try {
-                // Aquí llamamos al motor de Vercel (carpeta api, archivo register.js)
                 const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -157,9 +176,13 @@
 
                 if (response.ok) {
                     Swal.fire('¡Éxito!', 'Identidad creada correctamente. Generando QR...', 'success');
+                    
+                    // Guardar ID activo en la variable global
+                    usuarioIdActual = result.id_generado; 
+
                     document.getElementById('registroForm').classList.add('hidden');
                     document.getElementById('qr-container').classList.remove('hidden');
-                    document.getElementById('idMostrado').innerText = "ID: " + result.id_generado;
+                    document.getElementById('idMostrado').innerText = "ID de Usuario: " + result.id_generado;
 
                     const baseUrl = window.location.href.split('?')[0];
                     const sosUrl = `${baseUrl}?id=${result.id_generado}`;
@@ -187,7 +210,57 @@
         }
 
         // ==========================================
-        // FUNCIÓN 2: EMERGENCIA (CONECTA CON LA API DE VERCEL)
+        // FUNCIÓN 2: VINCULAR STICKER FÍSICO
+        // ==========================================
+        async function vincularStickerFisico() {
+            const codigoSticker = document.getElementById('inputStickerFisico').value.trim().toLowerCase();
+            const mensaje = document.getElementById('mensajeVinculacion');
+
+            if (!codigoSticker) {
+                mensaje.style.color = 'red';
+                mensaje.innerText = 'Escribe el código de la calcomanía.';
+                return;
+            }
+
+            if (!usuarioIdActual) {
+                mensaje.style.color = 'red';
+                mensaje.innerText = 'Error: No se encontró tu ID de usuario activo.';
+                return;
+            }
+
+            mensaje.style.color = 'blue';
+            mensaje.innerText = 'Buscando calcomanía en el inventario...';
+
+            try {
+                // Llama al nuevo motor de Vercel (api/link-sticker.js)
+                const response = await fetch('/api/link-sticker', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        id_sticker: codigoSticker, 
+                        user_id: usuarioIdActual 
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    mensaje.style.color = 'green';
+                    mensaje.innerText = `¡Éxito! La calcomanía ${codigoSticker} ahora está vinculada a tu perfil.`;
+                    document.getElementById('inputStickerFisico').value = '';
+                    Swal.fire('¡Vinculada!', `Tu calcomanía ${codigoSticker} ya está activa.`, 'success');
+                } else {
+                    mensaje.style.color = 'red';
+                    mensaje.innerText = result.error || 'No se pudo vincular el sticker.';
+                }
+            } catch (error) {
+                mensaje.style.color = 'red';
+                mensaje.innerText = 'Error de conexión con el servidor.';
+            }
+        }
+
+        // ==========================================
+        // FUNCIÓN 3: EMERGENCIA (CONECTA CON LA API DE VERCEL)
         // ==========================================
         async function triggerSOS() {
             const btn = document.getElementById('btn-sos');
@@ -209,7 +282,6 @@
                 btn.innerHTML = '<i class="fa-solid fa-satellite-dish fa-beat mr-3"></i> ENVIANDO ALERTA...';
 
                 try {
-                    // Aquí llamamos al motor de Vercel (carpeta api, archivo send-alert.js)
                     const response = await fetch('/api/send-alert', {
                         method: 'POST',
                         body: JSON.stringify({ id_usuario: userId, latitud: lat, longitud: lon, url_mapa: urlMapa }),
@@ -242,14 +314,5 @@
             }
         }
     </script>
-    
-    <style>
-        @media print {
-            body * { visibility: hidden; }
-            #qr-container, #qr-container * { visibility: visible; }
-            #qr-container { position: absolute; left: 0; top: 0; width: 100%; }
-            button { display: none !important; }
-        }
-    </style>
 </body>
 </html>
