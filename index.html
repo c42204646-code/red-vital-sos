@@ -3,633 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOS MedAlert - Moto Pro360</title>
-    
-    <!-- Tailwind CSS -->
+    <title>RED Vital SOS - Alerta Médica</title>
+    <!-- Tailwind CSS para el diseño profesional -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- FontAwesome para íconos -->
+    <!-- Librería para generar el código QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Librería para alertas bonitas (SweetAlert2) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- QRCode.js Library para generar QRs de prueba -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        brand: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c', 900: '#7f1d1d' },
-                        dark: '#1e293b'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .fade-in { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Animación para el botón SOS */
-        .pulse-border { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-        
-        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #dc2626; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { background-color: #f3f4f6; }
+        .sos-button { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
     </style>
 </head>
-<body class="flex flex-col min-h-screen text-slate-800">
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    <!-- Navbar global -->
-    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-        <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <!-- Integración del logo Moto Pro360 -->
-                <img src="image_64b9ff.png" alt="Moto Pro360" class="h-12 w-auto object-contain drop-shadow-sm">
+    <!-- ========================================== -->
+    <!-- VISTA 1: REGISTRO DE USUARIOS -->
+    <!-- ========================================== -->
+    <div id="register-view" class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8 hidden">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-notes-medical"></i>
             </div>
-            <div class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md" id="status-badge">
-                <i class="fa-solid fa-circle-notch fa-spin"></i> Conectando...
-            </div>
+            <h1 class="text-2xl font-bold text-gray-800">Crea tu Identidad Médica</h1>
+            <p class="text-sm text-gray-500 mt-2">Tus datos estarán encriptados y seguros</p>
         </div>
-    </nav>
 
-    <main class="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 pb-20 relative">
-
-        <!-- ================= VISTA 0: CARGANDO ================= -->
-        <section id="view-loading" class="fade-in flex flex-col items-center justify-center py-20">
-            <div class="loader mb-4 w-12 h-12 border-4"></div>
-            <p class="text-slate-500 font-medium text-sm text-center" id="loading-text">Cargando sistema Moto Pro360...</p>
-        </section>
-
-        <!-- ================= VISTA 1: CREAR/EDITAR PERFIL (MOTORIZADO) ================= -->
-        <section id="view-profile" class="fade-in hidden">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-black text-slate-900">Tu Perfil Médico</h2>
-                <p class="text-sm text-slate-500 mt-1">Esta información salvará tu vida en caso de accidente.</p>
+        <form id="registroForm" onsubmit="registrarUsuario(event)" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo</label>
+                <input type="text" id="regNombre" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-
-            <form id="profile-form" class="space-y-5 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
-                <div id="form-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
-                    <div class="loader w-10 h-10"></div>
-                </div>
-
-                <div class="space-y-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b pb-1">1. Datos Personales</h3>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre Completo *</label>
-                        <input type="text" id="in-name" required placeholder="Ej. Carlos Flores" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Cédula / ID</label>
-                            <input type="text" id="in-id" placeholder="Opcional" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre *</label>
-                            <select id="in-blood" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition">
-                                <option value="">Selec...</option>
-                                <option value="A+">A+</option><option value="A-">A-</option>
-                                <option value="B+">B+</option><option value="B-">B-</option>
-                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                                <option value="O+">O+</option><option value="O-">O-</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-4 pt-2">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b pb-1">2. Información Médica</h3>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Alergias (Medicamentos, alimentos)</label>
-                        <input type="text" id="in-allergies" placeholder="Ej. Penicilina (o 'Ninguna')" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Condiciones Médicas</label>
-                        <textarea id="in-conditions" rows="2" placeholder="Ej. Asma, Hipertensión..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none resize-none transition"></textarea>
-                    </div>
-                </div>
-
-                <div class="space-y-4 pt-2">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b pb-1">3. Contacto de Emergencia</h3>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Contacto *</label>
-                        <input type="text" id="in-contact-name" required placeholder="Ej. María (Esposa)" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Teléfono Móvil (WhatsApp) *</label>
-                        <div class="flex">
-                            <span class="inline-flex items-center px-3 text-sm text-slate-500 bg-slate-100 border border-r-0 border-slate-200 rounded-l-xl">
-                                <i class="fa-solid fa-phone"></i>
-                            </span>
-                            <input type="tel" id="in-contact-phone" required placeholder="+584120000000" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-r-xl focus:ring-2 focus:ring-brand-500 outline-none transition">
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="w-full bg-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-lg hover:bg-slate-800 transition transform hover:-translate-y-0.5 mt-4 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Guardar Perfil Seguro
-                </button>
-            </form>
-        </section>
-
-        <!-- ================= VISTA 2: DASHBOARD Y CALCOMANÍAS ================= -->
-        <section id="view-dashboard" class="fade-in hidden">
-            <!-- Resumen del Perfil -->
-            <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 text-white shadow-lg mb-6 relative overflow-hidden">
-                <div class="absolute -right-10 -top-10 opacity-10">
-                    <img src="image_64b9ff.png" class="w-48 h-48 object-contain filter grayscale invert">
-                </div>
-                <div class="relative z-10">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Piloto Registrado</p>
-                            <h2 id="dash-name" class="text-2xl font-black">---</h2>
-                        </div>
-                        <button onclick="window.app.showView('view-profile')" class="bg-white/20 hover:bg-white/30 text-white w-10 h-10 rounded-full flex items-center justify-center transition">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                    </div>
-                    <div class="inline-flex items-center gap-2 bg-brand-500 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">
-                        <i class="fa-solid fa-droplet"></i> Sangre: <span id="dash-blood">---</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gestión de Calcomanías (La magia de Supabase/Firebase) -->
-            <h3 class="text-lg font-black text-slate-800 mb-3">Tus Calcomanías SOS</h3>
             
-            <div id="stickers-list" class="space-y-3 mb-6">
-                <!-- Los stickers vinculados aparecerán aquí -->
-            </div>
-
-            <div class="bg-brand-50 p-5 rounded-2xl border border-brand-200">
-                <h4 class="text-sm font-bold text-brand-900 mb-2"><i class="fa-solid fa-qrcode mr-1"></i> Vincular Nueva Calcomanía</h4>
-                <p class="text-xs text-brand-700 mb-4">Ingresa el código secreto impreso en tu nueva calcomanía física para enlazarla a tu perfil.</p>
-                
-                <div class="flex gap-2">
-                    <input type="text" id="in-sticker-id" placeholder="Ej. MOTO-XXXX" class="flex-1 px-4 py-2.5 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none uppercase font-mono text-sm font-bold text-slate-800">
-                    <button onclick="window.app.linkSticker()" id="btn-link" class="bg-brand-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-brand-700 transition shadow-md">
-                        Vincular
-                    </button>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo de Sangre</label>
+                    <select id="regSangre" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="No especificado">Seleccionar</option>
+                        <option value="A+">A+</option><option value="A-">A-</option>
+                        <option value="B+">B+</option><option value="B-">B-</option>
+                        <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                        <option value="O+">O+</option><option value="O-">O-</option>
+                    </select>
                 </div>
-                <p id="link-error" class="text-xs text-red-600 mt-2 hidden font-medium"></p>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Alergias</label>
+                    <input type="text" id="regAlergias" placeholder="Ej: Penicilina" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
             </div>
 
-            <!-- Botón simulador para pruebas -->
-            <div class="mt-8 pt-6 border-t border-slate-200 text-center">
-                <p class="text-xs text-slate-500 mb-3">Zona de Pruebas (Simulador de Imprenta)</p>
-                <button onclick="window.app.generateTestSticker()" class="bg-slate-100 text-slate-700 border border-slate-300 font-bold py-2 px-4 rounded-xl hover:bg-slate-200 transition text-sm flex items-center justify-center gap-2 mx-auto">
-                    <i class="fa-solid fa-print"></i> Generar QR de Prueba
-                </button>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Condiciones Médicas</label>
+                <input type="text" id="regCondiciones" placeholder="Ej: Hipertensión, Asma" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-        </section>
 
-        <!-- ================= VISTA 3: SIMULADOR DE IMPRENTA ================= -->
-        <section id="view-test-qr" class="fade-in hidden text-center">
-            <button onclick="window.app.showView('view-dashboard')" class="text-slate-500 hover:text-slate-800 mb-6 flex items-center font-bold text-sm">
-                <i class="fa-solid fa-arrow-left mr-2"></i> Volver
+            <div class="pt-4 border-t mt-4">
+                <h3 class="text-sm font-bold text-red-600 mb-3"><i class="fa-solid fa-phone"></i> Contacto de Emergencia</h3>
+                <div class="space-y-3">
+                    <input type="text" id="regTelefono" placeholder="Teléfono (Ej: +58414...)" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="email" id="regEmail" required placeholder="Correo Electrónico (Requerido)" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <button type="submit" id="btnRegistrar" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors mt-6">
+                <i class="fa-solid fa-qrcode mr-2"></i> Guardar y Generar Código QR
             </button>
+        </form>
 
-            <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden inline-block w-full max-w-sm">
-                <div class="absolute top-0 left-0 w-full h-2 bg-brand-500"></div>
-                
-                <img src="image_64b9ff.png" alt="Moto Pro360" class="h-10 mx-auto mt-2 mb-4 object-contain">
-                <h2 class="text-xl font-black text-slate-900 mb-1">Calcomanía Generada</h2>
-                
-                <div class="bg-slate-50 p-4 rounded-2xl inline-block border border-slate-200 mb-4 shadow-inner mt-4">
-                    <div id="test-qrcode-container" class="bg-white p-2 rounded-xl"></div>
-                </div>
-                
-                <div class="bg-brand-50 p-3 rounded-xl border border-brand-100 mb-6">
-                    <p class="text-[10px] text-brand-600 font-bold uppercase tracking-wider mb-1">Código de Activación (ID):</p>
-                    <p id="test-sticker-code" class="text-xl font-mono font-black text-brand-900 tracking-widest select-all cursor-pointer bg-white py-2 rounded-lg border border-brand-200">---</p>
-                    <p class="text-xs text-brand-600 mt-2">Copia este código y úsalo en el panel para vincularlo a tu cuenta.</p>
-                </div>
-                
-                <button onclick="window.app.simulateScan()" class="w-full bg-slate-800 text-white font-bold py-3 px-4 rounded-xl hover:bg-slate-900 transition flex items-center justify-center gap-2 shadow-md">
-                    <i class="fa-solid fa-camera"></i> Simular que un Paramédico lo escanea
-                </button>
-            </div>
-        </section>
+        <div id="qr-container" class="mt-8 hidden flex flex-col items-center p-6 bg-gray-50 rounded-xl border border-gray-200">
+            <h3 class="font-bold text-green-600 mb-4">¡Registro Exitoso!</h3>
+            <div class="p-3 bg-white border-2 border-gray-200 rounded-xl shadow-sm mb-2" id="qrcode"></div>
+            <p class="text-sm font-mono text-gray-600 mb-4" id="idMostrado"></p>
+            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-900">
+                <i class="fa-solid fa-print mr-2"></i> Imprimir Etiqueta
+            </button>
+        </div>
+    </div>
 
-        <!-- ================= VISTA 4: PERFIL DE EMERGENCIA (AL ESCANEAR EL PARAMÉDICO) ================= -->
-        <section id="view-emergency" class="fade-in hidden">
-            <!-- Banner de Alerta -->
-            <div class="bg-brand-600 text-white p-5 rounded-t-2xl shadow-md text-center pulse-border relative overflow-hidden">
-                <div class="relative z-10">
-                    <img src="image_64b9ff.png" alt="Moto Pro360" class="h-14 mx-auto mb-3 object-contain drop-shadow-md bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/20">
-                    <h2 class="text-lg font-black tracking-widest uppercase flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Alerta Médica
-                    </h2>
-                    <p class="text-xs opacity-90 mt-1 font-medium">Protocolo de Asistencia Moto Pro360</p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-b-2xl shadow-xl border border-slate-200 p-5 sm:p-6 space-y-6 relative overflow-hidden">
-                
-                <div id="em-not-linked-msg" class="hidden text-center py-10">
-                    <i class="fa-solid fa-link-slash text-4xl text-slate-300 mb-3"></i>
-                    <h3 class="text-lg font-bold text-slate-700">QR No Vinculado</h3>
-                    <p class="text-sm text-slate-500 mt-2">Este código QR de Moto Pro360 es válido, pero el motorizado aún no ha completado su registro médico.</p>
-                </div>
-
-                <div id="em-data-container" class="space-y-6">
-                    <!-- Identificación Principal -->
-                    <div class="text-center border-b border-slate-100 pb-6">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Paciente</p>
-                        <h3 id="em-name" class="text-3xl font-black text-slate-900 mb-1 leading-tight">Nombre</h3>
-                        <p id="em-id" class="text-sm text-slate-500 font-mono font-medium">ID: ---</p>
-                        
-                        <div class="mt-5 inline-flex items-center justify-center gap-2 bg-brand-50 text-brand-700 px-6 py-3 rounded-2xl border border-brand-200 shadow-sm">
-                            <i class="fa-solid fa-droplet text-brand-500 text-2xl"></i>
-                            <div class="text-left leading-none">
-                                <span class="text-[10px] uppercase font-bold text-slate-500 block mb-0.5">Grupo Sanguíneo</span>
-                                <span id="em-blood" class="text-2xl font-black">O+</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Historial Médico -->
-                    <div class="space-y-4">
-                        <div class="bg-orange-50 p-4 rounded-xl border border-orange-100 flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            <div>
-                                <h4 class="text-xs font-bold text-orange-800 uppercase mb-0.5">Alergias</h4>
-                                <p id="em-allergies" class="text-sm font-semibold text-slate-800">Ninguna conocida</p>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-full bg-slate-200 text-brand-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-heart-pulse"></i></div>
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-0.5">Condiciones Médicas</h4>
-                                <p id="em-conditions" class="text-sm font-semibold text-slate-800">No registradas</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Acciones de Emergencia -->
-                    <div class="border-t border-slate-200 pt-6 space-y-4">
-                        <h4 class="text-xs font-bold text-slate-400 uppercase text-center mb-1 tracking-widest">Protocolo de Contacto</h4>
-                        
-                        <div class="bg-slate-900 p-4 rounded-2xl flex items-center justify-between text-white shadow-lg shadow-slate-900/20">
-                            <div>
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">Llamar a Emergencias:</p>
-                                <p id="em-contact-name" class="font-bold text-lg">Familiar</p>
-                            </div>
-                            <a id="btn-call" href="#" class="bg-green-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-green-400 transition transform hover:scale-105 active:scale-95">
-                                <i class="fa-solid fa-phone text-xl"></i>
-                            </a>
-                        </div>
-
-                        <button onclick="window.app.enviarAlertaGPS()" id="btn-gps" class="w-full bg-brand-600 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-500 transition flex items-center justify-center gap-2 group">
-                            <i class="fa-solid fa-location-crosshairs group-hover:animate-spin"></i> Enviar ubicación SOS por WhatsApp
-                        </button>
-                        <p id="gps-status" class="text-[10px] text-center text-slate-400 mt-2 hidden font-medium px-4"></p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center mt-8 pb-4">
-                <img src="image_64b9ff.png" alt="Moto Pro360" class="h-6 mx-auto opacity-50 grayscale">
-            </div>
-        </section>
-
-    </main>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Variables de entorno de Canvas
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'motopro360-sos-demo';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    <!-- ========================================== -->
+    <!-- VISTA 2: EMERGENCIA (PANTALLA DEL RESCATISTA) -->
+    <!-- ========================================== -->
+    <div id="emergency-view" class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden hidden border-t-8 border-red-600">
+        <div class="bg-red-600 p-6 text-center text-white">
+            <i class="fa-solid fa-truck-medical text-5xl mb-3"></i>
+            <h1 class="text-3xl font-black tracking-wider">ALERTA MÉDICA</h1>
+            <p class="text-red-100 mt-1 font-medium">IDENTIDAD PROTEGIDA</p>
+        </div>
         
-        // Estado de la app
-        const state = {
-            db: null,
-            auth: null,
-            userId: null,
-            currentStickerIdView: null,
-            emergencyPhoneRaw: "",
-            tempGeneratedSticker: null
-        };
-
-        // Objeto global para acceder desde HTML
-        window.app = {
-            showView: (viewId) => {
-                ['view-loading', 'view-profile', 'view-dashboard', 'view-test-qr', 'view-emergency'].forEach(id => {
-                    document.getElementById(id).classList.add('hidden');
-                });
-                document.getElementById(viewId).classList.remove('hidden');
-                window.scrollTo(0, 0);
-            },
+        <div class="p-8 text-center space-y-6">
+            <p class="text-gray-600 text-lg leading-relaxed">
+                Ha escaneado la etiqueta de seguridad de un usuario de <span class="font-bold text-gray-800">RED Vital SOS</span>.
+            </p>
             
-            updateStatus: (msg, isError = false) => {
-                const badge = document.getElementById('status-badge');
-                badge.innerHTML = isError ? `<i class="fa-solid fa-circle-exclamation text-red-500"></i> ${msg}` : `<i class="fa-solid fa-check-circle text-green-500"></i> ${msg}`;
-            },
+            <div class="bg-red-50 text-red-800 p-4 rounded-xl text-sm font-medium border border-red-100">
+                <i class="fa-solid fa-circle-info mr-1"></i>
+                Presione el botón para enviar la ubicación GPS al Centro de Mando y a los familiares.
+            </div>
 
-            // Lógica del Formulario (Guardar Perfil)
-            handleProfileSubmit: async (e) => {
-                e.preventDefault();
-                if (!state.userId) return;
+            <button id="btn-sos" onclick="triggerSOS()" class="sos-button w-full bg-red-600 hover:bg-red-700 text-white font-black text-xl py-5 px-4 rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center">
+                <i class="fa-solid fa-bell mr-3 text-2xl"></i> ALERTAR AHORA
+            </button>
+        </div>
+    </div>
 
-                document.getElementById('form-overlay').classList.remove('hidden');
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('id');
 
-                const data = {
-                    name: document.getElementById('in-name').value.trim(),
-                    idNum: document.getElementById('in-id').value.trim(),
-                    blood: document.getElementById('in-blood').value,
-                    allergies: document.getElementById('in-allergies').value.trim(),
-                    conditions: document.getElementById('in-conditions').value.trim(),
-                    contactName: document.getElementById('in-contact-name').value.trim(),
-                    contactPhone: document.getElementById('in-contact-phone').value.trim(),
-                    updatedAt: new Date().toISOString()
-                };
+        // Mostrar pantalla correspondiente según la URL
+        if (userId) {
+            document.getElementById('emergency-view').classList.remove('hidden');
+        } else {
+            document.getElementById('register-view').classList.remove('hidden');
+        }
 
-                try {
-                    // Guardar perfil privado del usuario
-                    const profileRef = doc(state.db, 'artifacts', appId, 'users', state.userId, 'profile', 'main');
-                    await setDoc(profileRef, data);
-                    
-                    // Si el usuario edita su perfil, deberíamos actualizar todos sus stickers vinculados
-                    // (En esta demo simple, la actualización se hace al vincular, pero en prod
-                    // habría que iterar sobre sus stickers y actualizarlos).
+        let qrCodeObj = null;
 
-                    await window.app.loadDashboard();
-                } catch (error) {
-                    console.error("Error saving profile:", error);
-                    alert("Error al guardar el perfil. Intenta de nuevo.");
-                } finally {
-                    document.getElementById('form-overlay').classList.add('hidden');
-                }
-            },
+        // ==========================================
+        // FUNCIÓN 1: REGISTRO (CONECTA CON LA API DE VERCEL)
+        // ==========================================
+        async function registrarUsuario(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnRegistrar');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Guardando datos...';
+            btn.disabled = true;
 
-            // Cargar Dashboard
-            loadDashboard: async () => {
-                if (!state.userId) return;
-                
-                try {
-                    const profileRef = doc(state.db, 'artifacts', appId, 'users', state.userId, 'profile', 'main');
-                    const profileSnap = await getDoc(profileRef);
+            const datos = {
+                nombre: document.getElementById('regNombre').value,
+                sangre: document.getElementById('regSangre').value,
+                alergias: document.getElementById('regAlergias').value,
+                condiciones: document.getElementById('regCondiciones').value,
+                telefono: document.getElementById('regTelefono').value,
+                email: document.getElementById('regEmail').value
+            };
 
-                    if (profileSnap.exists()) {
-                        const data = profileSnap.data();
-                        document.getElementById('dash-name').textContent = data.name;
-                        document.getElementById('dash-blood').textContent = data.blood;
-                        
-                        // En una app real, buscaríamos en public/stickers con where('ownerId', '==', userId).
-                        // Por las reglas de NO COMPLEX QUERIES, mostraremos un UI simulado aquí si es demo,
-                        // o requeriríamos guardar una subcolección de stickers en el perfil del usuario.
-                        // Para mantenerlo robusto y simple, omitiremos listar todos por ahora y nos centraremos en VINCULAR.
-                        document.getElementById('stickers-list').innerHTML = `
-                            <p class="text-xs text-slate-500 italic">Puedes vincular múltiples calcomanías físicas a tu perfil (casco, moto, chaqueta).</p>
-                        `;
-
-                        window.app.showView('view-dashboard');
-                    } else {
-                        // Usuario nuevo, obligar a crear perfil
-                        window.app.showView('view-profile');
-                    }
-                } catch (error) {
-                    console.error("Error loading dashboard:", error);
-                    window.app.showView('view-profile');
-                }
-            },
-
-            // Vincular Calcomanía (El motorizado ingresa el código)
-            linkSticker: async () => {
-                if (!state.userId) return;
-                const input = document.getElementById('in-sticker-id');
-                const btn = document.getElementById('btn-link');
-                const errorMsg = document.getElementById('link-error');
-                const stickerId = input.value.trim().toUpperCase();
-
-                if (!stickerId) {
-                    errorMsg.textContent = "Ingresa un código válido.";
-                    errorMsg.classList.remove('hidden');
-                    return;
-                }
-
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                errorMsg.classList.add('hidden');
-
-                try {
-                    // 1. Obtener los datos actuales del perfil del usuario para copiarlos al sticker
-                    const profileRef = doc(state.db, 'artifacts', appId, 'users', state.userId, 'profile', 'main');
-                    const profileSnap = await getDoc(profileRef);
-                    
-                    if (!profileSnap.exists()) throw new Error("No profile");
-                    const profileData = profileSnap.data();
-
-                    // 2. Vincular (Sobrescribir el documento público del sticker)
-                    const stickerRef = doc(state.db, 'artifacts', appId, 'public', 'data', 'stickers', stickerId);
-                    
-                    await setDoc(stickerRef, {
-                        linked: true,
-                        ownerId: state.userId,
-                        emergencyData: profileData, // Copia pública para acceso instantáneo del paramédico
-                        linkedAt: new Date().toISOString()
-                    });
-
-                    input.value = "";
-                    alert(`¡Éxito! La calcomanía ${stickerId} ha sido vinculada a tu perfil médico.`);
-                    
-                } catch (error) {
-                    console.error("Error linking sticker:", error);
-                    errorMsg.textContent = "Error al vincular. Verifica el código o tu conexión.";
-                    errorMsg.classList.remove('hidden');
-                } finally {
-                    btn.disabled = false;
-                    btn.textContent = "Vincular";
-                }
-            },
-
-            // Generador de prueba para simular imprenta
-            generateTestSticker: () => {
-                // Generar un ID aleatorio tipo MOTO-XXXX
-                const randomId = "MOTO-" + Math.random().toString(36).substr(2, 4).toUpperCase();
-                state.tempGeneratedSticker = randomId;
-                
-                document.getElementById('test-sticker-code').textContent = randomId;
-                
-                const container = document.getElementById('test-qrcode-container');
-                container.innerHTML = '';
-                
-                // La URL que leerá el paramédico
-                const baseUrl = window.location.origin + window.location.pathname;
-                const scanUrl = `${baseUrl}?id=${randomId}`;
-
-                new QRCode(container, {
-                    text: scanUrl,
-                    width: 200,
-                    height: 200,
-                    colorDark : "#1e293b",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
+            try {
+                // Aquí llamamos al motor de Vercel (carpeta api, archivo register.js)
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
                 });
 
-                window.app.showView('view-test-qr');
-            },
+                const result = await response.json();
 
-            // Simular escaneo
-            simulateScan: () => {
-                if (state.tempGeneratedSticker) {
-                    window.app.loadEmergencyMode(state.tempGeneratedSticker);
-                }
-            },
+                if (response.ok) {
+                    Swal.fire('¡Éxito!', 'Identidad creada correctamente. Generando QR...', 'success');
+                    document.getElementById('registroForm').classList.add('hidden');
+                    document.getElementById('qr-container').classList.remove('hidden');
+                    document.getElementById('idMostrado').innerText = "ID: " + result.id_generado;
 
-            // Modo Emergencia (Paramédico)
-            loadEmergencyMode: async (stickerId) => {
-                window.app.showView('view-loading');
-                
-                try {
-                    // 1. Buscar el sticker en la base de datos pública
-                    const stickerRef = doc(state.db, 'artifacts', appId, 'public', 'data', 'stickers', stickerId);
-                    const stickerSnap = await getDoc(stickerRef);
-
-                    if (stickerSnap.exists() && stickerSnap.data().linked) {
-                        // El sticker existe y está vinculado a un usuario
-                        const data = stickerSnap.data().emergencyData;
-                        
-                        document.getElementById('em-data-container').classList.remove('hidden');
-                        document.getElementById('em-not-linked-msg').classList.add('hidden');
-
-                        document.getElementById('em-name').textContent = data.name || "Desconocido";
-                        document.getElementById('em-id').textContent = data.idNum ? `ID/CI: ${data.idNum}` : "ID: No registrado";
-                        document.getElementById('em-blood').textContent = data.blood || "N/A";
-                        
-                        document.getElementById('em-allergies').textContent = data.allergies || "Ninguna registrada";
-                        document.getElementById('em-conditions').textContent = data.conditions || "Ninguna registrada";
-                        document.getElementById('em-contact-name').textContent = data.contactName || "Familiar";
-                        
-                        const phone = data.contactPhone || "";
-                        state.emergencyPhoneRaw = phone.replace(/[^0-9+]/g, '');
-                        document.getElementById('btn-call').href = `tel:${state.emergencyPhoneRaw}`;
-                    } else {
-                        // El código existe pero nadie lo ha vinculado, o no existe (calcomanía virgen)
-                        document.getElementById('em-data-container').classList.add('hidden');
-                        document.getElementById('em-not-linked-msg').classList.remove('hidden');
-                    }
-
-                    window.app.showView('view-emergency');
-                } catch (error) {
-                    console.error("Error fetching emergency data:", error);
-                    alert("No se pudo cargar la información de emergencia. Verifique su conexión a internet.");
-                }
-            },
-
-            // Enviar GPS por WhatsApp
-            enviarAlertaGPS: () => {
-                if (!state.emergencyPhoneRaw) {
-                    alert("No hay número de contacto configurado.");
-                    return;
-                }
-
-                const btn = document.getElementById('btn-gps');
-                const status = document.getElementById('gps-status');
-                const originalContent = btn.innerHTML;
-                
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Obteniendo ubicación...';
-                status.textContent = "Por favor, permite el acceso al GPS de tu teléfono.";
-                status.classList.remove('hidden');
-                status.classList.remove('text-red-500');
-
-                if ("geolocation" in navigator) {
-                    navigator.geolocation.getCurrentPosition(
-                        function(position) {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            
-                            const googleMapsLink = `https://maps.google.com/?q=${lat},${lng}`;
-                            const pacienteName = document.getElementById('em-name').textContent;
-                            
-                            const mensaje = `🚨 *EMERGENCIA MOTO PRO360* 🚨\n\nEstoy atendiendo a *${pacienteName}* en un incidente vial.\nNecesita asistencia urgente. Su ubicación exacta es:\n${googleMapsLink}\n\n_Mensaje enviado vía SOS MedAlert._`;
-                            
-                            let waNumber = state.emergencyPhoneRaw.replace(/\+/g, '');
-                            const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(mensaje)}`;
-                            
-                            btn.innerHTML = originalContent;
-                            status.textContent = "Ubicación obtenida. Abriendo WhatsApp...";
-                            
-                            window.open(waUrl, '_blank');
-                        },
-                        function(error) {
-                            console.error("Error GPS:", error);
-                            btn.innerHTML = originalContent;
-                            status.classList.add('text-red-500');
-                            status.textContent = "Error al obtener ubicación. Asegúrate de tener el GPS activado y dar permisos.";
-                            
-                            if(confirm("No pudimos obtener la ubicación GPS. ¿Deseas enviar un mensaje de emergencia sin la ubicación?")) {
-                                 const pacienteName = document.getElementById('em-name').textContent;
-                                 const mensaje = `🚨 *EMERGENCIA MOTO PRO360* 🚨\n\nEstoy atendiendo a *${pacienteName}*. Necesita asistencia urgente, pero no pudimos obtener la ubicación GPS.\n\n_Mensaje enviado vía SOS MedAlert._`;
-                                 let waNumber = state.emergencyPhoneRaw.replace(/\+/g, '');
-                                 window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
-                            }
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                    );
+                    const baseUrl = window.location.href.split('?')[0];
+                    const sosUrl = `${baseUrl}?id=${result.id_generado}`;
+                    
+                    const qrContainerElement = document.getElementById('qrcode');
+                    qrContainerElement.innerHTML = '';
+                    qrCodeObj = new QRCode(qrContainerElement, {
+                        text: sosUrl, width: 180, height: 180,
+                        colorDark : "#000000", colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
                 } else {
-                    btn.innerHTML = originalContent;
-                    alert("Tu navegador no soporta geolocalización.");
+                    Swal.fire('Error en la BD', result.error || 'Revisa Supabase', 'error');
+                    resetBtnRegistro();
                 }
+            } catch (error) {
+                Swal.fire('Error Técnico', 'No se pudo conectar con el servidor Vercel.', 'error');
+                resetBtnRegistro();
             }
-        };
 
-        // Escucha del formulario
-        document.getElementById('profile-form').addEventListener('submit', window.app.handleProfileSubmit);
+            function resetBtnRegistro() {
+                btn.innerHTML = '<i class="fa-solid fa-qrcode mr-2"></i> Guardar y Generar Código QR';
+                btn.disabled = false;
+            }
+        }
 
-        // Inicialización de la aplicación
-        async function initApp() {
-            if (!firebaseConfig) {
-                window.app.updateStatus("Falta config BD", true);
+        // ==========================================
+        // FUNCIÓN 2: EMERGENCIA (CONECTA CON LA API DE VERCEL)
+        // ==========================================
+        async function triggerSOS() {
+            const btn = document.getElementById('btn-sos');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-3"></i> OBTENIENDO GPS...';
+            btn.disabled = true;
+            btn.classList.remove('sos-button', 'bg-red-600', 'hover:bg-red-700');
+            btn.classList.add('bg-gray-500', 'cursor-not-allowed');
+
+            if (!navigator.geolocation) {
+                Swal.fire('Error', 'Tu dispositivo no soporta GPS.', 'error');
                 return;
             }
 
-            try {
-                // Iniciar Firebase
-                const app = initializeApp(firebaseConfig);
-                state.db = getFirestore(app);
-                state.auth = getAuth(app);
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const urlMapa = `https://www.google.com/maps?q=${lat},${lon}`;
 
-                // Autenticar (Obligatorio para interactuar con la DB en este entorno)
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(state.auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(state.auth);
+                btn.innerHTML = '<i class="fa-solid fa-satellite-dish fa-beat mr-3"></i> ENVIANDO ALERTA...';
+
+                try {
+                    // Aquí llamamos al motor de Vercel (carpeta api, archivo send-alert.js)
+                    const response = await fetch('/api/send-alert', {
+                        method: 'POST',
+                        body: JSON.stringify({ id_usuario: userId, latitud: lat, longitud: lon, url_mapa: urlMapa }),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (response.ok) {
+                        Swal.fire('¡ALERTA ENVIADA!', 'Los familiares han sido notificados.', 'success');
+                        btn.innerHTML = '<i class="fa-solid fa-check mr-3"></i> ALERTA ENVIADA';
+                        btn.classList.replace('bg-gray-500', 'bg-green-600');
+                    } else {
+                        const errData = await response.json();
+                        Swal.fire('Error', errData.error || 'Fallo servidor', 'error');
+                        resetBtnSOS();
+                    }
+                } catch (error) {
+                    Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error');
+                    resetBtnSOS();
                 }
+            }, (error) => {
+                Swal.fire('GPS Requerido', 'Debes permitir el acceso a la ubicación.', 'warning');
+                resetBtnSOS();
+            });
 
-                state.userId = state.auth.currentUser.uid;
-                window.app.updateStatus("En línea");
-
-                // Enrutador: ¿Es una emergencia o un motorizado?
-                const urlParams = new URLSearchParams(window.location.search);
-                const stickerIdParam = urlParams.get('id');
-
-                if (stickerIdParam) {
-                    // Modo Paramédico (URL trae ID de calcomanía física)
-                    window.app.loadEmergencyMode(stickerIdParam.toUpperCase());
-                } else {
-                    // Modo Motorizado (App normal)
-                    window.app.loadDashboard();
-                }
-
-            } catch (error) {
-                console.error("Firebase init error:", error);
-                window.app.updateStatus("Error de Conexión", true);
+            function resetBtnSOS() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-bell mr-3 text-2xl"></i> ALERTAR AHORA';
+                btn.classList.remove('bg-gray-500', 'cursor-not-allowed');
+                btn.classList.add('bg-red-600', 'hover:bg-red-700', 'sos-button');
             }
         }
-
-        // Arrancar
-        initApp();
     </script>
+    
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #qr-container, #qr-container * { visibility: visible; }
+            #qr-container { position: absolute; left: 0; top: 0; width: 100%; }
+            button { display: none !important; }
+        }
+    </style>
 </body>
 </html>
