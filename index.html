@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HumanHub by FUNDAINIL - Sistema de Reportes</title>
+    <title>SOS MedAlert - Perfil de Emergencia QR</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
+    
+    <!-- FontAwesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Chart.js para el Dashboard -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- html2pdf para exportar el reporte -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
         tailwind.config = {
@@ -23,457 +23,402 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        brand: { 50: '#f0f4f8', 100: '#d9e2ec', 200: '#bcccdc', 300: '#9fb3c8', 400: '#829ab1', 500: '#627d98', 600: '#486581', 700: '#334e68', 800: '#243b53', 900: '#102a43' },
-                        secondary: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 900: '#14532d' } 
+                        brand: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c', 900: '#7f1d1d' },
+                        dark: '#1e293b'
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        .slide-up { animation: slideUp 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .loader { border: 3px solid #e2e8f0; border-top: 3px solid #334e68; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .paper-preview { background-color: white; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); max-width: 210mm; min-height: 297mm; margin: 0 auto; padding: 2.5rem; color: #000; }
-        @media print { body { background: white; } nav, .no-print { display: none !important; } .paper-preview { box-shadow: none; max-width: none; min-height: 0; padding: 0; margin: 0; } .avoid-break { page-break-inside: avoid; } }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Toggle Switch Custom CSS */
-        .toggle-checkbox:checked { right: 0; border-color: #16a34a; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #16a34a; }
+        /* Estilo para el latido del corazón */
+        .heartbeat { animation: heartbeat 1.5s infinite; }
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.15); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.15); }
+            70% { transform: scale(1); }
+        }
+        
+        /* Animación de pulso de emergencia */
+        .pulse-border {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen text-slate-800">
 
+    <!-- Navbar global -->
     <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center gap-3">
-                    <img src="https://static.wixstatic.com/media/8aebba_9455cbe95cfb4aa183dde97c176546f2~mv2.png/v1/fill/w_263,h_75,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/8aebba_9455cbe95cfb4aa183dde97c176546f2~mv2.png" alt="Logo FUNDAINIL" class="h-10 w-auto object-contain">
-                    <div class="flex flex-col justify-center border-l-2 border-slate-200 pl-3">
-                        <h1 class="text-xl font-black text-brand-900 leading-none tracking-tight">HumanHub</h1>
-                        <span class="text-[9px] uppercase font-bold text-slate-500 tracking-widest mt-0.5">Sistema de Reportes</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 sm:gap-4">
-                    <button onclick="cambiarPista('selector')" id="btn-tab-formulario" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 transition hover:bg-slate-200 focus:outline-none"><i class="fa-solid fa-pen-to-square mr-1.5"></i> <span class="hidden sm:inline">Nuevo Reporte</span></button>
-                    <button onclick="cambiarPista('dashboard')" id="btn-tab-dashboard" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition hidden focus:outline-none"><i class="fa-solid fa-chart-pie mr-1.5"></i> <span class="hidden sm:inline">Panel Gerencial</span></button>
-                    <div class="h-6 w-px bg-slate-300 mx-1 hidden sm:block"></div>
-                    <div class="relative group">
-                        <button onclick="toggleRol()" id="btn-rol" class="flex items-center gap-2 px-3 py-1.5 border border-brand-200 bg-brand-50 rounded-full transition-all hover:bg-brand-100 focus:outline-none">
-                            <div class="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs shadow-sm"><i class="fa-solid fa-user"></i></div>
-                            <span id="texto-rol" class="text-xs font-bold text-brand-700 uppercase tracking-wide hidden sm:block">Modo: Campo</span>
-                        </button>
-                    </div>
-                </div>
+        <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-center">
+            <div class="flex items-center gap-2 text-brand-600">
+                <i class="fa-solid fa-notes-medical text-2xl heartbeat"></i>
+                <h1 class="text-xl font-black tracking-tight">SOS <span class="text-slate-800">MedAlert</span></h1>
             </div>
         </div>
     </nav>
 
-    <main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
-        
-        <!-- ================= VISTA 0: SELECTOR ================= -->
-        <section id="vista-selector" class="fade-in">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">¿Qué actividad vamos a reportar hoy?</h2>
-                <p class="text-slate-500 text-lg max-w-2xl mx-auto">Selecciona el área de intervención para cargar los indicadores estandarizados.</p>
+    <main class="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 pb-20">
+
+        <!-- ================= VISTA 1: CREAR PERFIL (FORMULARIO) ================= -->
+        <section id="view-create" class="fade-in hidden">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">Crea tu código de vida</h2>
+                <p class="text-sm text-slate-500 mt-1">Lleva este QR contigo. En caso de emergencia, hablará por ti.</p>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                <button onclick="seleccionarSector('Salud')" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-red-300 hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"><div class="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform"><i class="fa-solid fa-stethoscope"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Salud</h3></button>
-                <button onclick="seleccionarSector('Nutrición')" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-orange-300 hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"><div class="w-14 h-14 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform"><i class="fa-solid fa-apple-whole"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Nutrición</h3></button>
-                <button onclick="seleccionarSector('WASH')" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-cyan-300 hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"><div class="w-14 h-14 bg-cyan-50 text-cyan-500 rounded-2xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform"><i class="fa-solid fa-droplet"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">WASH</h3></button>
-                <button onclick="seleccionarSector('Protección')" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-purple-300 hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"><div class="w-14 h-14 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform"><i class="fa-solid fa-hands-holding-child"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Protección</h3></button>
-                <button onclick="seleccionarSector('Educación')" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-yellow-300 hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"><div class="w-14 h-14 bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform"><i class="fa-solid fa-book-open"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Educación</h3></button>
-                <button onclick="seleccionarSector('Medios de Vida')" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"><div class="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform"><i class="fa-solid fa-seedling"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Medios de Vida</h3></button>
-            </div>
-        </section>
 
-        <!-- ================= VISTA 1: FORMULARIO ================= -->
-        <section id="vista-formulario" class="hidden slide-up">
-            <div class="mb-6"><button type="button" onclick="cambiarPista('selector')" class="text-slate-500 hover:text-brand-600 font-semibold text-sm transition flex items-center group"><div class="w-8 h-8 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center mr-3 group-hover:bg-brand-50 transition-colors"><i class="fa-solid fa-arrow-left"></i></div>Volver al selector</button></div>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden max-w-5xl mx-auto">
-                <div class="bg-slate-50/50 border-b border-slate-200 px-6 py-5 flex justify-between items-center">
-                    <div><h2 class="text-2xl font-bold text-slate-800 flex items-center"><i class="fa-solid fa-clipboard-list text-brand-600 mr-3"></i>Registro de Actividad</h2></div>
-                    <div class="bg-brand-50 text-brand-800 px-4 py-2.5 rounded-xl border border-brand-100 shadow-sm flex items-center gap-3">
-                        <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center"><i id="icono-sector-actual" class="fa-solid fa-tag text-brand-600"></i></div>
-                        <div><span class="text-[10px] uppercase font-bold text-brand-600 block leading-tight">Sector Actual</span><span id="lbl-sector-actual" class="font-black text-lg leading-none">Sector</span></div><input type="hidden" id="in-sector">
-                    </div>
-                </div>
-                
-                <form id="form-reporte" class="p-6 sm:p-8 space-y-10">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        
-                        <!-- 1. Datos Básicos -->
-                        <div class="space-y-5">
-                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">1. Información General</h3>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nombre del Profesional *</label>
-                                <div class="relative"><i class="fa-solid fa-id-badge absolute left-3.5 top-3 text-slate-400"></i><input type="text" id="in-profesional" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"></div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nombre del Proyecto *</label>
-                                <div class="relative"><i class="fa-solid fa-file-signature absolute left-3.5 top-3 text-slate-400"></i><input type="text" id="in-proyecto" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"></div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tema Específico *</label>
-                                <div class="relative"><i class="fa-solid fa-bookmark absolute left-3.5 top-3 text-slate-400"></i><input type="text" id="in-tema" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none" placeholder="(Pronto será un menú dinámico)"></div>
-                            </div>
-                            <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">Fecha *</label><input type="date" id="in-fecha" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-slate-700"></div>
-                        </div>
-
-                        <!-- 2. Ubicación y GPS -->
-                        <div class="space-y-5">
-                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2 flex justify-between items-center">
-                                2. Localización 
-                                <button type="button" onclick="capturarUbicacion()" class="text-xs bg-brand-100 text-brand-700 hover:bg-brand-200 px-3 py-1 rounded-full font-bold transition flex items-center"><i class="fa-solid fa-location-crosshairs mr-1"></i> Usar GPS</button>
-                            </h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">Estado *</label><select id="in-estado" required onchange="actualizarMunicipios()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"><option value="">Seleccione...</option><option value="Distrito Capital">Distrito Capital</option><option value="Miranda">Miranda</option><option value="La Guaira">La Guaira</option></select></div>
-                                <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">Municipio *</label><select id="in-municipio" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none disabled:opacity-50"><option value="">Seleccione Estado</option></select></div>
-                            </div>
-                            <!-- Separación Comunidad vs Establecimiento -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">Comunidad / Sector *</label><input type="text" id="in-comunidad" required placeholder="Ej. La Dolorita" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"></div>
-                                <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">Establecimiento</label><input type="text" id="in-establecimiento" placeholder="Ej. Escuela Miranda" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-semibold text-slate-500 mb-1">Latitud</label><input type="text" id="in-lat" readonly class="w-full px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 outline-none cursor-not-allowed"></div>
-                                <div><label class="block text-xs font-semibold text-slate-500 mb-1">Longitud</label><input type="text" id="in-lng" readonly class="w-full px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 outline-none cursor-not-allowed"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 3. Áreas Transversales y Vulnerabilidades -->
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-6">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2"><i class="fa-solid fa-layer-group mr-2"></i>3. Áreas Transversales y Vulnerabilidades Específicas</h3>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <!-- Switches AAP, GEN, PEAS -->
-                            <div>
-                                <p class="text-xs font-bold text-slate-500 mb-3 uppercase">Enfoques Integrados a la Actividad</p>
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                                        <div><p class="text-sm font-bold text-slate-700">Género (GEN)</p><p class="text-[10px] text-slate-500">¿Se abordaron temas de equidad?</p></div>
-                                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input type="checkbox" id="tgg-gen" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 z-10"/><label for="tgg-gen" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div>
-                                    </div>
-                                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                                        <div><p class="text-sm font-bold text-slate-700">Rendición de Cuentas (AAP)</p><p class="text-[10px] text-slate-500">¿Se informó sobre canales de queja?</p></div>
-                                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input type="checkbox" id="tgg-aap" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 z-10"/><label for="tgg-aap" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div>
-                                    </div>
-                                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                                        <div><p class="text-sm font-bold text-slate-700">Protección Explotación (PEAS)</p><p class="text-[10px] text-slate-500">Prevención de abuso sexual</p></div>
-                                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input type="checkbox" id="tgg-peas" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 z-10"/><label for="tgg-peas" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Contadores Vulnerabilidad -->
-                            <div>
-                                <p class="text-xs font-bold text-slate-500 mb-3 uppercase">Población con Vulnerabilidad Específica</p>
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                                        <label class="text-sm font-bold text-slate-700 flex items-center"><i class="fa-solid fa-wheelchair text-brand-500 w-6"></i> Personas con Discapacidad</label>
-                                        <input type="number" id="vul-discapacidad" min="0" value="0" class="w-16 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center font-bold text-slate-800 outline-none">
-                                    </div>
-                                    <div class="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                                        <label class="text-sm font-bold text-slate-700 flex items-center"><i class="fa-solid fa-person-breastfeeding text-brand-500 w-6"></i> Embarazadas / Lactantes</label>
-                                        <input type="number" id="vul-embarazadas" min="0" value="0" class="w-16 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center font-bold text-slate-800 outline-none">
-                                    </div>
-                                    <div class="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                                        <label class="text-sm font-bold text-slate-700 flex items-center"><i class="fa-solid fa-earth-americas text-brand-500 w-6"></i> Población Indígena</label>
-                                        <input type="number" id="vul-indigenas" min="0" value="0" class="w-16 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center font-bold text-slate-800 outline-none">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. Población (Matriz R y No-R) -->
+            <form id="sos-form" class="space-y-5 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <!-- Datos Personales -->
+                <div class="space-y-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b pb-1">1. Datos Personales</h3>
                     <div>
-                        <div class="flex justify-between items-end border-b border-slate-100 pb-2 mb-4">
-                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">4. Desglose Poblacional (Nuevo vs Recurrente)</h3>
-                            <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold">R = Recurrente | NO-R = Primera vez</span>
-                        </div>
-                        
-                        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                            <table class="w-full text-sm text-center">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
-                                    <tr>
-                                        <th rowspan="2" class="p-3 border-r border-slate-200 text-left w-1/4">Grupo de Edad</th>
-                                        <th colspan="2" class="p-2 border-r border-slate-200 text-pink-600 bg-pink-50/50">Femenino</th>
-                                        <th colspan="2" class="p-2 border-r border-slate-200 text-blue-600 bg-blue-50/50">Masculino</th>
-                                        <th rowspan="2" class="p-3 font-bold text-slate-800 bg-slate-100 w-20">Total</th>
-                                    </tr>
-                                    <tr class="text-[10px] font-bold">
-                                        <th class="p-2 border-r border-t border-slate-200 bg-pink-50/30">NO-R</th>
-                                        <th class="p-2 border-r border-t border-slate-200 bg-pink-50/30">R</th>
-                                        <th class="p-2 border-r border-t border-slate-200 bg-blue-50/30">NO-R</th>
-                                        <th class="p-2 border-r border-t border-slate-200 bg-blue-50/30">R</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-edades" class="divide-y divide-slate-100">
-                                    <!-- Filas Básicas (Pronto serán dinámicas) -->
-                                    <tr class="hover:bg-slate-50 transition">
-                                        <td class="p-3 border-r border-slate-200 text-left font-semibold text-slate-700">0 - 17 años</td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-pink-400 outline-none" data-group="nna" data-gender="f" data-type="nor"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-pink-400 outline-none" data-group="nna" data-gender="f" data-type="r"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-blue-400 outline-none" data-group="nna" data-gender="m" data-type="nor"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-blue-400 outline-none" data-group="nna" data-gender="m" data-type="r"></td>
-                                        <td class="p-3 font-bold text-slate-800 bg-slate-50" id="tot-nna">0</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50 transition">
-                                        <td class="p-3 border-r border-slate-200 text-left font-semibold text-slate-700">18 - 59 años</td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-pink-400 outline-none" data-group="adulto" data-gender="f" data-type="nor"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-pink-400 outline-none" data-group="adulto" data-gender="f" data-type="r"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-blue-400 outline-none" data-group="adulto" data-gender="m" data-type="nor"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-blue-400 outline-none" data-group="adulto" data-gender="m" data-type="r"></td>
-                                        <td class="p-3 font-bold text-slate-800 bg-slate-50" id="tot-adulto">0</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50 transition">
-                                        <td class="p-3 border-r border-slate-200 text-left font-semibold text-slate-700">60+ años</td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-pink-400 outline-none" data-group="mayor" data-gender="f" data-type="nor"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-pink-400 outline-none" data-group="mayor" data-gender="f" data-type="r"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-blue-400 outline-none" data-group="mayor" data-gender="m" data-type="nor"></td>
-                                        <td class="p-2 border-r border-slate-200"><input type="number" min="0" value="0" onchange="calcularTotalMatriz()" class="input-demo w-full p-1 text-center border border-slate-200 rounded focus:border-blue-400 outline-none" data-group="mayor" data-gender="m" data-type="r"></td>
-                                        <td class="p-3 font-bold text-slate-800 bg-slate-50" id="tot-mayor">0</td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="bg-brand-900 text-white font-bold">
-                                        <td class="p-3 text-right" colspan="5">TOTAL ALCANZADO:</td>
-                                        <td class="p-3 text-xl" id="gran-total">0</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre Completo *</label>
+                        <input type="text" id="in-name" required placeholder="Ej. Ana Pérez" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
                     </div>
-
-                    <!-- Indicadores Sectoriales (Dinámicos) -->
-                    <div id="contenedor-indicadores-sector" class="bg-brand-50/50 p-6 sm:p-8 rounded-2xl border border-brand-100 hidden relative overflow-hidden">
-                        <div class="absolute top-0 right-0 p-10 bg-brand-500 opacity-5 rounded-bl-full -mr-10 -mt-10"></div>
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-brand-800 mb-6 relative z-10"><i class="fa-solid fa-chart-line mr-2"></i>5. Indicadores Clave: <span id="lbl-ind-sector"></span></h3>
-                        <div id="grid-indicadores" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 relative z-10"></div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div class="space-y-6 flex flex-col h-full">
-                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">6. Insumos Extra / Notas / Foto</h3>
-                            <div id="lista-materiales" class="space-y-2"></div>
-                            <button type="button" onclick="agregarFilaMaterial()" class="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center bg-brand-50 px-3 py-2 rounded-lg w-fit"><i class="fa-solid fa-plus-circle mr-1"></i> Añadir insumo</button>
-                            <textarea id="in-descripcion" required rows="4" placeholder="Notas analíticas de campo..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none resize-none flex-grow text-sm"></textarea>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Cédula / ID</label>
+                            <input type="text" id="in-id" placeholder="Opcional" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
                         </div>
                         <div>
-                            <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition cursor-pointer relative overflow-hidden group h-full min-h-[200px] flex items-center justify-center">
-                                <input type="file" id="in-foto" accept="image/*" onchange="previsualizarFoto(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                                <div id="foto-preview-container" class="hidden absolute inset-0 bg-black/5 flex items-center justify-center p-2">
-                                    <img id="foto-preview" class="max-h-full max-w-full object-contain drop-shadow-md rounded">
-                                </div>
-                                <div id="foto-placeholder" class="text-slate-500 group-hover:text-brand-600 transition-colors">
-                                    <i class="fa-solid fa-camera text-4xl mb-3"></i>
-                                    <p class="text-sm font-medium">Adjuntar fotografía de evidencia</p>
-                                </div>
-                            </div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre *</label>
+                            <select id="in-blood" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="">Selec...</option>
+                                <option value="A+">A+</option><option value="A-">A-</option>
+                                <option value="B+">B+</option><option value="B-">B-</option>
+                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                                <option value="O+">O+</option><option value="O-">O-</option>
+                            </select>
                         </div>
                     </div>
-                    
-                    <div class="pt-6 border-t border-slate-200">
-                        <button type="button" onclick="procesarReporte()" id="btn-generar" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-300 flex justify-center items-center text-lg">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-3"></i> Procesar y Generar Informe
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <!-- ================= VISTA 2: DOCUMENTO A4 ================= -->
-        <section id="vista-documento" class="hidden slide-up">
-            <div class="mb-6 flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <button onclick="cambiarPista('formulario')" class="text-slate-500 hover:text-brand-600 font-semibold px-4 py-2 rounded-lg hover:bg-slate-50 transition flex items-center mb-4 sm:mb-0"><i class="fa-solid fa-pen mr-2"></i> Editar Datos</button>
-                <div class="flex gap-3">
-                    <button onclick="generarPDF()" class="bg-white border border-slate-300 text-slate-700 px-5 py-2.5 rounded-xl font-bold hover:bg-slate-50 shadow-sm transition flex items-center"><i class="fa-solid fa-file-pdf text-red-500 mr-2"></i> PDF</button>
-                    <button id="btn-guardar-bd" class="bg-secondary-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-secondary-900 shadow-md transition flex items-center"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> Guardar</button>
                 </div>
-            </div>
 
-            <div class="bg-slate-200/50 p-4 sm:p-8 rounded-2xl overflow-x-auto">
-                <div id="documento-final" class="paper-preview">
-                    <!-- Componentes del documento (Mantenemos la estructura simplificada por espacio, se rellenará en JS) -->
-                    <div class="border-b-2 border-brand-900 pb-4 mb-8 flex justify-between items-center">
-                        <div class="flex items-center gap-4"><div class="w-16 h-16 bg-brand-900 text-white rounded flex justify-center items-center text-3xl"><i class="fa-solid fa-hands-holding-child"></i></div><div><h1 class="text-xl font-black text-brand-900">FUNDAINIL</h1><p class="text-xs text-slate-500">Informe Técnico de Campo</p></div></div>
-                        <div class="text-right text-xs text-slate-500">ID: <span id="doc-id" class="font-mono bg-slate-100 px-1"></span></div>
+                <!-- Datos Médicos -->
+                <div class="space-y-4 pt-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b pb-1">2. Información Médica</h3>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Alergias (Medicamentos, alimentos)</label>
+                        <input type="text" id="in-allergies" placeholder="Ej. Penicilina, Nueces (o 'Ninguna')" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4 text-sm mb-6 bg-slate-50 p-4 border border-slate-200 rounded">
-                        <div><strong>Proyecto:</strong> <span id="doc-proyecto"></span><br><strong>Tema:</strong> <span id="doc-tema"></span><br><strong>Sector:</strong> <span id="doc-sector"></span></div>
-                        <div><strong>Fecha:</strong> <span id="doc-fecha"></span><br><strong>Comunidad:</strong> <span id="doc-comunidad"></span><br><strong>Inst.:</strong> <span id="doc-inst"></span></div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Condiciones Médicas</label>
+                        <textarea id="in-conditions" rows="2" placeholder="Ej. Diabético Tipo 2, Hipertensión..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none resize-none"></textarea>
                     </div>
-                    
-                    <div class="mb-6 text-sm flex gap-4 bg-brand-50 p-3 rounded border border-brand-100">
-                        <span class="font-bold text-brand-800">Transversales:</span>
-                        <span id="doc-gen" class="text-slate-600"></span> | <span id="doc-aap" class="text-slate-600"></span> | <span id="doc-peas" class="text-slate-600"></span>
-                    </div>
-
-                    <h2 class="text-sm font-bold text-brand-800 uppercase border-b border-slate-200 mb-2">Población Alcanzada (Total: <span id="doc-total"></span>)</h2>
-                    <table class="w-full text-xs text-center border-collapse border border-slate-200 mb-6">
-                        <thead class="bg-slate-100"><tr><th class="border p-1">Grupo</th><th class="border p-1">Fem NO-R</th><th class="border p-1">Fem R</th><th class="border p-1">Masc NO-R</th><th class="border p-1">Masc R</th><th class="border p-1 font-bold">Subtotal</th></tr></thead>
-                        <tbody id="doc-tbody-edades"></tbody>
-                    </table>
-
-                    <div id="contenedor-doc-indicadores" class="mb-6"><h2 class="text-sm font-bold text-brand-800 uppercase border-b border-slate-200 mb-2">Resultados Cuantitativos</h2><div id="doc-grid-indicadores" class="grid grid-cols-2 gap-2 text-xs"></div></div>
-                    
-                    <h2 class="text-sm font-bold text-brand-800 uppercase border-b border-slate-200 mb-2">Notas y Desarrollo</h2>
-                    <p id="doc-notas" class="text-sm text-justify text-slate-700 italic bg-slate-50 p-4 border border-slate-200 rounded mb-6"></p>
-
-                    <div class="flex flex-col items-center mt-12 pt-6 border-t border-slate-300">
-                        <img id="doc-foto" class="max-h-64 object-contain rounded-lg border p-1 border-slate-200 shadow-sm hidden mb-8">
-                        <div class="w-48 border-t-2 border-slate-400 mb-1"></div>
-                        <p class="text-xs font-bold text-slate-700 text-center" id="doc-firma-nombre"></p>
-                        <p class="text-[10px] text-slate-500 uppercase text-center">Responsable de Reporte</p>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Medicamentos Actuales</label>
+                        <input type="text" id="in-meds" placeholder="Ej. Losartán 50mg" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
                     </div>
                 </div>
+
+                <!-- Contacto de Emergencia -->
+                <div class="space-y-4 pt-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b pb-1">3. Contacto de Emergencia</h3>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Contacto *</label>
+                        <input type="text" id="in-contact-name" required placeholder="Ej. Carlos Pérez (Hermano)" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Teléfono Móvil *</label>
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 text-sm text-slate-500 bg-slate-100 border border-r-0 border-slate-200 rounded-l-xl">
+                                <i class="fa-solid fa-phone"></i>
+                            </span>
+                            <input type="tel" id="in-contact-phone" required placeholder="+584120000000" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-r-xl focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Incluye el código de país (ej. +58, +52, +34) para WhatsApp.</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-lg hover:bg-slate-800 transition transform hover:-translate-y-0.5 mt-4 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-qrcode"></i> Generar Mi QR de Emergencia
+                </button>
+            </form>
+        </section>
+
+        <!-- ================= VISTA 2: MOSTRAR QR GENERADO ================= -->
+        <section id="view-result" class="fade-in hidden">
+            <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-brand-500"></div>
+                
+                <h2 class="text-2xl font-black text-slate-900 mb-2 mt-2">¡QR Listo!</h2>
+                <p class="text-sm text-slate-500 mb-6">Guarda esta imagen, imprímela o ponla como fondo de pantalla de bloqueo.</p>
+                
+                <div class="bg-slate-50 p-4 rounded-2xl inline-block border border-slate-200 mb-6 shadow-inner">
+                    <div id="qrcode-container" class="bg-white p-2 rounded-xl"></div>
+                </div>
+                
+                <div class="space-y-3">
+                    <button onclick="probarQR()" class="w-full bg-brand-50 text-brand-700 font-bold py-3 px-4 rounded-xl border border-brand-200 hover:bg-brand-100 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-eye"></i> Simular Escaneo
+                    </button>
+                    <button onclick="volverAFormulario()" class="w-full bg-slate-100 text-slate-600 font-bold py-3 px-4 rounded-xl hover:bg-slate-200 transition">
+                        Modificar Datos
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- ================= VISTA 3: DASHBOARD ================= -->
-        <section id="vista-dashboard" class="hidden slide-up">
-            <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-8">Panel Gerencial (Demo Estático)</h2>
-            <div class="bg-white p-10 rounded-2xl border border-slate-200 text-center shadow-sm">
-                <i class="fa-solid fa-person-digging text-6xl text-slate-300 mb-4"></i>
-                <h3 class="text-xl font-bold text-slate-700">Panel en Remodelación</h3>
-                <p class="text-slate-500 mt-2">Esta sección se actualizará en la Fase 2 una vez conectemos las tablas dinámicas de Supabase.</p>
-                <button onclick="cambiarPista('selector')" class="mt-6 bg-brand-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-brand-700">Volver a Reportes</button>
+        <!-- ================= VISTA 3: PERFIL DE EMERGENCIA (AL ESCANEAR) ================= -->
+        <section id="view-emergency" class="fade-in hidden">
+            
+            <!-- Banner de Alerta -->
+            <div class="bg-brand-600 text-white p-4 rounded-t-2xl shadow-md text-center pulse-border">
+                <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                <h2 class="text-lg font-black tracking-widest uppercase">Atención Médica</h2>
+                <p class="text-xs opacity-90">Perfil de emergencia de este paciente.</p>
+            </div>
+
+            <div class="bg-white rounded-b-2xl shadow-xl border border-slate-200 p-5 space-y-6">
+                
+                <!-- Identificación Principal -->
+                <div class="text-center border-b border-slate-100 pb-5">
+                    <h3 id="em-name" class="text-3xl font-black text-slate-900 mb-1">Nombre</h3>
+                    <p id="em-id" class="text-sm text-slate-500 font-mono">ID: ---</p>
+                    
+                    <div class="mt-4 inline-flex items-center justify-center gap-2 bg-brand-50 text-brand-700 px-5 py-2.5 rounded-full border border-brand-200">
+                        <i class="fa-solid fa-droplet text-brand-500 text-xl"></i>
+                        <span class="text-sm uppercase font-semibold text-slate-600">Sangre:</span>
+                        <span id="em-blood" class="text-2xl font-black">O+</span>
+                    </div>
+                </div>
+
+                <!-- Historial Médico -->
+                <div class="space-y-4">
+                    <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                        <h4 class="text-xs font-bold text-orange-800 uppercase mb-1 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Alergias</h4>
+                        <p id="em-allergies" class="text-sm font-semibold text-slate-800">Ninguna conocida</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1.5"><i class="fa-solid fa-heart-pulse text-brand-500"></i> Condiciones</h4>
+                            <p id="em-conditions" class="text-sm font-semibold text-slate-800">No registradas</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1.5"><i class="fa-solid fa-pills text-blue-500"></i> Medicamentos</h4>
+                            <p id="em-meds" class="text-sm font-semibold text-slate-800">Ninguno</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones de Emergencia -->
+                <div class="border-t border-slate-200 pt-5 space-y-3">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase text-center mb-3">Contacto Inmediato</h4>
+                    
+                    <div class="bg-slate-100 p-3 rounded-xl flex items-center justify-between mb-2">
+                        <div>
+                            <p class="text-xs text-slate-500">Llamar a:</p>
+                            <p id="em-contact-name" class="font-bold text-slate-800">Familiar</p>
+                        </div>
+                        <a id="btn-call" href="#" class="bg-green-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition">
+                            <i class="fa-solid fa-phone text-xl"></i>
+                        </a>
+                    </div>
+
+                    <button onclick="enviarAlertaGPS()" id="btn-gps" class="w-full bg-dark text-white font-bold py-3.5 px-4 rounded-xl shadow-md hover:bg-slate-800 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-location-crosshairs"></i> Enviar ubicación SOS por WhatsApp
+                    </button>
+                    <p id="gps-status" class="text-[10px] text-center text-slate-400 mt-1 hidden"></p>
+                </div>
+                
+                <div class="text-center mt-6">
+                    <button onclick="volverInicio()" class="text-xs text-slate-400 underline">Crear mi propio código QR SOS</button>
+                </div>
             </div>
         </section>
+
     </main>
 
     <script>
-        // Config básica
-        const municipiosPorEstado = { "Distrito Capital": ["Libertador"], "Miranda": ["Sucre", "Chacao", "Baruta", "Guaicaipuro"], "La Guaira": ["Vargas"] };
-        window.actualizarMunicipios = () => {
-            const est = document.getElementById('in-estado').value; const sel = document.getElementById('in-municipio'); sel.innerHTML = '<option value="">Seleccione...</option>';
-            if(est && municipiosPorEstado[est]) { sel.disabled = false; municipiosPorEstado[est].forEach(m => sel.innerHTML += `<option value="${m}">${m}</option>`); } else { sel.disabled = true; }
+        // Variables globales
+        let currentUrlWithData = "";
+        let qrCodeInstance = null;
+        let emergencyPhoneRaw = "";
+
+        // Inicialización
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawData = urlParams.get('d');
+
+            if (rawData) {
+                // Si la URL tiene el parámetro 'd', estamos en modo escaneo/emergencia
+                cargarModoEmergencia(rawData);
+            } else {
+                // Si no, mostramos el formulario para crear un QR
+                showView('view-create');
+            }
         };
 
-        window.cambiarPista = (v) => { ['vista-selector', 'vista-formulario', 'vista-documento', 'vista-dashboard'].forEach(id => document.getElementById(id).classList.add('hidden')); document.getElementById('vista-'+v).classList.remove('hidden'); window.scrollTo(0,0); };
-
-        const configSectores = {
-            "WASH": { icon: "fa-droplet", color: "text-cyan-500", ind: [{ label: "Kits de Higiene Entregados", tipo: "number", icon: "fa-box" }] },
-            "Salud": { icon: "fa-stethoscope", color: "text-red-500", ind: [{ label: "Consultas Médicas (Casos)", tipo: "number", icon: "fa-user-doctor" }] },
-            "Nutrición": { icon: "fa-apple-whole", color: "text-orange-500", ind: [{ label: "Tamizajes Realizados", tipo: "number", icon: "fa-scale-balanced" }] },
-            "Protección": { icon: "fa-hands-holding-child", color: "text-purple-500", ind: [{ label: "Casos Remitidos", tipo: "number", icon: "fa-folder-open" }] },
-            "Educación": { icon: "fa-book-open", color: "text-yellow-500", ind: [{ label: "Kits Escolares", tipo: "number", icon: "fa-backpack" }] },
-            "Medios de Vida": { icon: "fa-seedling", color: "text-emerald-500", ind: [{ label: "Emprendedores Formados", tipo: "number", icon: "fa-people-group" }] }
-        };
-
-        window.seleccionarSector = (sector) => {
-            const conf = configSectores[sector];
-            document.getElementById('lbl-sector-actual').textContent = sector; document.getElementById('in-sector').value = sector;
-            document.getElementById('icono-sector-actual').className = `fa-solid ${conf.icon} ${conf.color}`; document.getElementById('lbl-ind-sector').textContent = sector;
-            const grid = document.getElementById('grid-indicadores'); grid.innerHTML = '';
-            if (conf.ind) { document.getElementById('contenedor-indicadores-sector').classList.remove('hidden'); conf.ind.forEach(i => { grid.innerHTML += `<div class="bg-white p-3 rounded-xl shadow-sm border border-brand-100"><label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase">${i.label}</label><div class="relative"><i class="fa-solid ${i.icon} absolute left-3 top-2.5 text-brand-400"></i><input type="${i.tipo}" min="0" value="0" data-label="${i.label}" class="input-ind w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-lg outline-none focus:border-brand-500"></div></div>`; }); }
-            cambiarPista('formulario');
-        };
-
-        // GPS Logica
-        window.capturarUbicacion = () => {
-            if (navigator.geolocation) {
-                const btn = event.currentTarget; const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => { document.getElementById('in-lat').value = pos.coords.latitude.toFixed(6); document.getElementById('in-lng').value = pos.coords.longitude.toFixed(6); btn.innerHTML = '<i class="fa-solid fa-check text-green-500"></i> Listo'; },
-                    (err) => { alert("No se pudo obtener la ubicación. Verifique permisos."); btn.innerHTML = orig; },
-                    { enableHighAccuracy: true, timeout: 5000 }
-                );
-            } else { alert("GPS no soportado en este navegador."); }
-        };
-
-        // Lógica de Matriz R/No-R
-        window.calcularTotalMatriz = () => {
-            let granTotal = 0;
-            ['nna', 'adulto', 'mayor'].forEach(grp => {
-                let sub = 0;
-                document.querySelectorAll(`.input-demo[data-group="${grp}"]`).forEach(inp => sub += (parseInt(inp.value)||0));
-                document.getElementById(`tot-${grp}`).textContent = sub;
-                granTotal += sub;
-            });
-            document.getElementById('gran-total').textContent = granTotal;
-        };
-
-        let fotoBase64 = "";
-        window.previsualizarFoto = (e) => { const f = e.target.files[0]; if(f){ const r = new FileReader(); r.onload=e=>{ fotoBase64=e.target.result; document.getElementById('foto-preview').src=fotoBase64; document.getElementById('foto-preview-container').classList.remove('hidden'); document.getElementById('foto-placeholder').classList.add('hidden'); }; r.readAsDataURL(f); } };
-
-        let reporteActual = null;
-        window.procesarReporte = () => {
-            const indArr = []; document.querySelectorAll('.input-ind').forEach(i => { if((parseInt(i.value)||0)>0) indArr.push({lbl: i.dataset.label, val: i.value}); });
+        // Manejador del Formulario
+        document.getElementById('sos-form').addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            // Recolectar Matriz Demográfica
-            const demo = [];
-            ['nna', 'adulto', 'mayor'].forEach(grp => {
-                const fila = { 
-                    grupo: grp === 'nna' ? '0-17' : (grp === 'adulto' ? '18-59' : '60+'),
-                    f_nor: parseInt(document.querySelector(`.input-demo[data-group="${grp}"][data-gender="f"][data-type="nor"]`).value)||0,
-                    f_r: parseInt(document.querySelector(`.input-demo[data-group="${grp}"][data-gender="f"][data-type="r"]`).value)||0,
-                    m_nor: parseInt(document.querySelector(`.input-demo[data-group="${grp}"][data-gender="m"][data-type="nor"]`).value)||0,
-                    m_r: parseInt(document.querySelector(`.input-demo[data-group="${grp}"][data-gender="m"][data-type="r"]`).value)||0
-                };
-                fila.sub = fila.f_nor + fila.f_r + fila.m_nor + fila.m_r;
-                demo.push(fila);
-            });
-
-            reporteActual = {
-                id: "REP-" + Math.random().toString(36).substr(2,6).toUpperCase(),
-                profesional: document.getElementById('in-profesional').value,
-                proyecto: document.getElementById('in-proyecto').value, tema: document.getElementById('in-tema').value,
-                fecha: document.getElementById('in-fecha').value, sector: document.getElementById('in-sector').value,
-                comunidad: document.getElementById('in-comunidad').value, inst: document.getElementById('in-establecimiento').value,
-                trans: {
-                    gen: document.getElementById('tgg-gen').checked, aap: document.getElementById('tgg-aap').checked, peas: document.getElementById('tgg-peas').checked
-                },
-                vul: {
-                    disc: document.getElementById('vul-discapacidad').value, emb: document.getElementById('vul-embarazadas').value, ind: document.getElementById('vul-indigenas').value
-                },
-                demografia: demo,
-                total: document.getElementById('gran-total').textContent,
-                indicadores: indArr, notas: document.getElementById('in-descripcion').value, foto: fotoBase64
+            // 1. Recopilar datos
+            const data = {
+                n: document.getElementById('in-name').value.trim(),
+                i: document.getElementById('in-id').value.trim(),
+                b: document.getElementById('in-blood').value,
+                a: document.getElementById('in-allergies').value.trim(),
+                c: document.getElementById('in-conditions').value.trim(),
+                m: document.getElementById('in-meds').value.trim(),
+                cn: document.getElementById('in-contact-name').value.trim(),
+                cp: document.getElementById('in-contact-phone').value.trim()
             };
 
-            pintarDocumento();
-            cambiarPista('documento');
-        };
+            // 2. Convertir a JSON y luego a Base64 para hacerlo seguro en la URL
+            const jsonString = JSON.stringify(data);
+            const base64Data = btoa(encodeURIComponent(jsonString)); // encodeURIComponent maneja acentos y caracteres especiales antes del btoa
 
-        function pintarDocumento() {
-            const d = reporteActual;
-            document.getElementById('doc-id').textContent = d.id; document.getElementById('doc-proyecto').textContent = d.proyecto;
-            document.getElementById('doc-tema').textContent = d.tema; document.getElementById('doc-sector').textContent = d.sector;
-            document.getElementById('doc-fecha').textContent = d.fecha; document.getElementById('doc-comunidad').textContent = d.comunidad;
-            document.getElementById('doc-inst').textContent = d.inst || 'N/A'; document.getElementById('doc-firma-nombre').textContent = d.profesional;
+            // 3. Construir URL final
+            // Usamos la URL actual sin parámetros y le pegamos la data
+            const baseUrl = window.location.origin + window.location.pathname;
+            currentUrlWithData = `${baseUrl}?d=${base64Data}`;
+
+            // 4. Generar QR
+            generarQR(currentUrlWithData);
+
+            // 5. Mostrar resultado
+            showView('view-result');
+        });
+
+        function generarQR(textUrl) {
+            const container = document.getElementById('qrcode-container');
+            container.innerHTML = ''; // Limpiar anterior
             
-            document.getElementById('doc-gen').innerHTML = d.trans.gen ? 'GEN: <i class="fa-solid fa-check text-green-500"></i>' : 'GEN: <i class="fa-solid fa-xmark text-red-500"></i>';
-            document.getElementById('doc-aap').innerHTML = d.trans.aap ? 'AAP: <i class="fa-solid fa-check text-green-500"></i>' : 'AAP: <i class="fa-solid fa-xmark text-red-500"></i>';
-            document.getElementById('doc-peas').innerHTML = d.trans.peas ? 'PEAS: <i class="fa-solid fa-check text-green-500"></i>' : 'PEAS: <i class="fa-solid fa-xmark text-red-500"></i>';
-
-            const tb = document.getElementById('doc-tbody-edades'); tb.innerHTML = '';
-            d.demografia.forEach(f => {
-                tb.innerHTML += `<tr><td class="border p-1 bg-slate-50">${f.grupo}</td><td class="border p-1">${f.f_nor}</td><td class="border p-1">${f.f_r}</td><td class="border p-1">${f.m_nor}</td><td class="border p-1">${f.m_r}</td><td class="border p-1 font-bold bg-slate-50">${f.sub}</td></tr>`;
+            qrCodeInstance = new QRCode(container, {
+                text: textUrl,
+                width: 200,
+                height: 200,
+                colorDark : "#1e293b",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H // Alto nivel de corrección (bueno para emergencias/QR con logos)
             });
-            document.getElementById('doc-total').textContent = d.total;
-
-            const dg = document.getElementById('doc-grid-indicadores'); dg.innerHTML = '';
-            if(d.indicadores.length > 0){ d.indicadores.forEach(i => dg.innerHTML+=`<div class="flex justify-between bg-slate-50 p-2 border rounded"><span>${i.lbl}</span><strong class="text-brand-700">${i.val}</strong></div>`); }
-            
-            document.getElementById('doc-notas').textContent = d.notas;
-            if(d.foto){ document.getElementById('doc-foto').src = d.foto; document.getElementById('doc-foto').classList.remove('hidden'); }
         }
 
-        window.generarPDF = () => { html2pdf().set({ margin: 0, filename: `Reporte_${reporteActual.id}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(document.getElementById('documento-final')).save(); };
-        window.onload = () => cambiarPista('selector');
+        function cargarModoEmergencia(base64Data) {
+            try {
+                // Decodificar Base64
+                const jsonString = decodeURIComponent(atob(base64Data));
+                const data = JSON.parse(jsonString);
+
+                // Llenar la interfaz de emergencia
+                document.getElementById('em-name').textContent = data.n || "Desconocido";
+                document.getElementById('em-id').textContent = data.i ? `ID/CI: ${data.i}` : "ID: No registrado";
+                document.getElementById('em-blood').textContent = data.b || "N/A";
+                
+                document.getElementById('em-allergies').textContent = data.a || "Ninguna registrada";
+                document.getElementById('em-conditions').textContent = data.c || "Ninguna registrada";
+                document.getElementById('em-meds').textContent = data.m || "Ninguno";
+                
+                document.getElementById('em-contact-name').textContent = data.cn || "Contacto de Emergencia";
+                
+                // Configurar botón de llamada
+                const phone = data.cp || "";
+                emergencyPhoneRaw = phone.replace(/[^0-9+]/g, ''); // Limpiar para WhatsApp/Llamadas
+                document.getElementById('btn-call').href = `tel:${emergencyPhoneRaw}`;
+
+                showView('view-emergency');
+            } catch (error) {
+                console.error("Error decodificando QR:", error);
+                alert("El código QR parece estar dañado o tener un formato incorrecto.");
+                showView('view-create');
+            }
+        }
+
+        function enviarAlertaGPS() {
+            if (!emergencyPhoneRaw) {
+                alert("No hay número de contacto configurado.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-gps');
+            const status = document.getElementById('gps-status');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Obteniendo ubicación...';
+            status.textContent = "Por favor, permite el acceso al GPS del navegador.";
+            status.classList.remove('hidden');
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // Crear mensaje de WhatsApp
+                        const googleMapsLink = `https://maps.google.com/?q=${lat},${lng}`;
+                        const pacienteName = document.getElementById('em-name').textContent;
+                        
+                        const mensaje = `🚨 *EMERGENCIA MÉDICA* 🚨\n\nEstoy atendiendo a *${pacienteName}*.\nNecesita asistencia urgente. Su ubicación actual es:\n${googleMapsLink}\n\n_Mensaje enviado vía SOS MedAlert._`;
+                        
+                        // Limpiar el número para WhatsApp (quitar el +, guiones, etc, pero mantener código país)
+                        let waNumber = emergencyPhoneRaw.replace(/\+/g, '');
+                        
+                        const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(mensaje)}`;
+                        
+                        // Restaurar botón y abrir WhatsApp
+                        btn.innerHTML = originalText;
+                        status.textContent = "Ubicación obtenida. Abriendo WhatsApp...";
+                        
+                        window.open(waUrl, '_blank');
+                    },
+                    function(error) {
+                        console.error("Error GPS:", error);
+                        btn.innerHTML = originalText;
+                        status.classList.add('text-brand-500');
+                        status.textContent = "Error al obtener ubicación. Asegúrate de tener el GPS activado y dar permisos al navegador.";
+                        
+                        // Alternativa si falla el GPS: Enviar mensaje sin ubicación
+                        if(confirm("No pudimos obtener la ubicación GPS. ¿Deseas enviar un mensaje de emergencia sin la ubicación?")) {
+                             const pacienteName = document.getElementById('em-name').textContent;
+                             const mensaje = `🚨 *EMERGENCIA MÉDICA* 🚨\n\nEstoy atendiendo a *${pacienteName}*. Necesita asistencia urgente, pero no pudimos obtener la ubicación GPS.\n\n_Mensaje enviado vía SOS MedAlert._`;
+                             let waNumber = emergencyPhoneRaw.replace(/\+/g, '');
+                             window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                btn.innerHTML = originalText;
+                alert("Tu navegador no soporta geolocalización.");
+            }
+        }
+
+        // Utilidades de Navegación
+        function showView(viewId) {
+            ['view-create', 'view-result', 'view-emergency'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function probarQR() {
+            // Extraer el parámetro de la URL generada y simular que entramos por ahí
+            const url = new URL(currentUrlWithData);
+            const dataParam = url.searchParams.get('d');
+            cargarModoEmergencia(dataParam);
+        }
+
+        function volverAFormulario() {
+            showView('view-create');
+        }
+        
+        function volverInicio() {
+            // Limpia la URL recargando la página sin parámetros
+            window.location.href = window.location.origin + window.location.pathname;
+        }
     </script>
 </body>
 </html>
