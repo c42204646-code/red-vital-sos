@@ -1,123 +1,60 @@
-module.exports = async function(req, res) {
-    // Solo aceptamos peticiones POST
+import { createClient } from '@supabase/supabase-js';
+
+// Usamos las llaves exactas que ya comprobamos que funcionan
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+);
+
+export default async function handler(req, res) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: "Método no permitido" });
+        return res.status(405).json({ error: 'Método no permitido' });
     }
 
+    const { id_usuario, latitud, longitud, url_mapa } = req.body;
+
     try {
-        const datosAlerta = req.body;
-        console.log("Activando alerta para:", datosAlerta.id_usuario);
+        // 1. Buscar al paciente en la tabla CORRECTA
+        const { data: paciente, error } = await supabase
+            .from('usuarios_emergencia')
+            .select('*')
+            .eq('id', id_usuario)
+            .single();
 
-        const SUPABASE_URL = process.env.SUPABASE_URL;
-        const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-        const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-        const RESEND_API_KEY = process.env.RESEND_API_KEY;
-
-        if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-            return res.status(500).json({ error: "Faltan llaves de Supabase en Vercel" });
+        // Si falla la búsqueda, devolvemos el error que viste en pantalla
+        if (error || !paciente) {
+            return res.status(404).json({ error: 'Usuario no encontrado en BD' });
         }
 
-        // ==========================================
-        // 0. BUSCAR DATOS DEL PACIENTE EN SUPABASE
-        // ==========================================
-        // Usamos el ID para traer su nombre, contacto, sangre, etc.
-        const supabaseEndpoint = `${SUPABASE_URL}/rest/v1/usuarios_emergencia?id=eq.${datosAlerta.id_usuario}&select=*`;
-        const supabaseResponse = await fetch(supabaseEndpoint, {
-            method: 'GET',
-            headers: {
-                'apikey': SUPABASE_SERVICE_KEY,
-                'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const userData = await supabaseResponse.json();
-        
-        if (!userData || userData.length === 0) {
-            return res.status(404).json({ error: "Usuario no encontrado en BD" });
-        }
-        
-        const paciente = userData[0]; // Aquí ya tenemos todos sus datos
+        // 2. Preparar el mensaje de alerta para Telegram
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID;
 
-        // La ubicación que envía la página web
-        const ubicacionMapa = datosAlerta.url_mapa || "No detectada";
+        if (botToken && chatId) {
+            const mensaje = `🚨 ¡ALERTA MÉDICA SOS! 🚨\n\n` +
+                            `👤 Paciente: ${paciente.nombre}\n` +
+                            `🩸 Sangre: ${paciente.sangre}\n` +
+                            `⚠️ Alergias: ${paciente.alergias}\n` +
+                            `⚕️ Condiciones: ${paciente.condiciones}\n\n` +
+                            `📞 Contacto Familiar: ${paciente.contacto_telefono}\n\n` +
+                            `📍 Ubicación de la Emergencia:\n${url_mapa}`;
 
-        let telegramEnviado = false;
-        let emailEnviado = false;
-
-        // ==========================================
-        // 1. ENVIAR ALERTA A TELEGRAM
-        // ==========================================
-        if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-            const mensajeTelegram = `🚨 ¡ALERTA SOS RED VITAL! 🚨\n\n👤 Paciente: ${paciente.nombre || 'Desconocido'}\n🆔 ID: ${paciente.id}\n📞 Teléfono: ${paciente.contacto_telefono || 'No proporcionado'}\n📍 Ubicación: ${ubicacionMapa}`;
-
-            const resTelegram = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            // Enviar a Telegram
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    chat_id: TELEGRAM_CHAT_ID,
-                    text: mensajeTelegram
+                    chat_id: chatId,
+                    text: mensaje
                 })
             });
-
-            if (resTelegram.ok) {
-                telegramEnviado = true;
-            } else {
-                console.error("Fallo Telegram:", await resTelegram.text());
-            }
         }
 
-        // ==========================================
-        // 2. ENVIAR ALERTA POR CORREO (RESEND)
-        // ==========================================
-        if (RESEND_API_KEY && paciente.contacto_email) {
-            const resEmail = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${RESEND_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    from: 'onboarding@resend.dev',
-                    to: paciente.contacto_email, // IMPORTANTE: En la cuenta gratis de Resend, este debe ser TU propio correo.
-                    subject: `🚨 ALERTA SOS - Paciente ${paciente.nombre || 'Desconocido'}`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; border: 2px solid red; padding: 20px; border-radius: 10px;">
-                            <h2 style="color: red; text-align: center;">¡Emergencia Médica! 🚨</h2>
-                            <p>Se ha activado una alerta SOS para el paciente <strong>${paciente.nombre || 'Desconocido'}</strong>.</p>
-                            <hr>
-                            <p><strong>🆔 ID de Usuario:</strong> ${paciente.id}</p>
-                            <p><strong>📞 Teléfono de Contacto:</strong> ${paciente.contacto_telefono || 'No proporcionado'}</p>
-                            <p><strong>📍 Ubicación:</strong> <a href="${ubicacionMapa}">Ver en Google Maps</a></p>
-                            <ul>
-                                <li><strong>Sangre:</strong> ${paciente.sangre || 'N/A'}</li>
-                                <li><strong>Alergias:</strong> ${paciente.alergias || 'N/A'}</li>
-                                <li><strong>Condiciones:</strong> ${paciente.condiciones || 'N/A'}</li>
-                            </ul>
-                            <br>
-                            <p style="text-align: center; font-size: 18px; font-weight: bold;">Por favor, actúe de inmediato.</p>
-                        </div>
-                    `
-                })
-            });
+        // Si todo sale bien, respondemos con éxito
+        return res.status(200).json({ success: true });
 
-            if (resEmail.ok) {
-                emailEnviado = true;
-            } else {
-                console.error("Fallo Resend:", await resEmail.text());
-            }
-        }
-
-        // Responder a la página web
-        return res.status(200).json({ 
-            success: true, 
-            telegram: telegramEnviado, 
-            email: emailEnviado 
-        });
-
-    } catch (error) {
-        console.error("Error crítico:", error);
-        return res.status(500).json({ error: "Error interno", detalles: error.message });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Error interno al enviar la alerta' });
     }
-};
+}
