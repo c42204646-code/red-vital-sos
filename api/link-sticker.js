@@ -1,10 +1,10 @@
-// api/link-sticker.js
 import { createClient } from '@supabase/supabase-js';
 
-// Conexión a prueba de balas
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Conexión corregida
+const supabase = createClient(
+    process.env.SUPABASE_URL, 
+    process.env.SUPABASE_SERVICE_KEY
+);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -18,7 +18,6 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Verificar si el sticker existe
         const { data: sticker, error: fetchError } = await supabase
             .from('qr_stickers')
             .select('*')
@@ -33,7 +32,6 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Esta calcomanía ya se encuentra vinculada.' });
         }
 
-        // 2. Actualizar el estado a vinculado
         const { error: updateError } = await supabase
             .from('qr_stickers')
             .update({ 
