@@ -1,10 +1,10 @@
 // api/get-sticker-user.js
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-    process.env.SUPABASE_URL, 
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Conexión a prueba de balas
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
         }
 
         if (sticker.estado !== 'vinculado' || !sticker.user_id) {
-            return res.status(400).json({ error: 'Esta calcomanía es auténtica pero aún no ha sido vinculada a ningún motorizado.' });
+            return res.status(400).json({ error: 'Esta calcomanía aún no ha sido vinculada.' });
         }
 
         return res.status(200).json({ success: true, user_id: sticker.user_id });
