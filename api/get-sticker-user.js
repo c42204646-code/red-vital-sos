@@ -25,7 +25,6 @@ export default async function handler(req, res) {
             .single();
 
         if (error || !sticker) {
-            // No es un sticker físico (podría ser un QR digital directo antiguo)
             return res.status(404).json({ error: 'Sticker no encontrado' });
         }
 
@@ -33,7 +32,6 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Esta calcomanía es auténtica pero aún no ha sido vinculada a ningún motorizado.' });
         }
 
-        // Si todo está bien, devolvemos el ID real del paciente (Ej: EXC-85338)
         return res.status(200).json({ success: true, user_id: sticker.user_id });
 
     } catch (err) {
