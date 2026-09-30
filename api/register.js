@@ -1,10 +1,10 @@
-// api/registrar.js
 import { createClient } from '@supabase/supabase-js';
 
-// Conexión a prueba de balas (busca las variables estándar de Vercel)
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Conexión corregida usando tus variables exactas
+const supabase = createClient(
+    process.env.SUPABASE_URL, 
+    process.env.SUPABASE_SERVICE_KEY // ¡Aquí estaba el error!
+);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -13,11 +13,9 @@ export default async function handler(req, res) {
 
     const { nombre, sangre, alergias, condiciones, telefono, email } = req.body;
 
-    // Generamos un ID de usuario único (Ej: EXC-85338)
     const id_generado = 'EXC-' + Math.floor(10000 + Math.random() * 90000);
 
     try {
-        // Guardamos en la tabla usuarios_emergencia (vista en tu Supabase)
         const { error } = await supabase
             .from('usuarios_emergencia')
             .insert([{ 
@@ -32,7 +30,6 @@ export default async function handler(req, res) {
 
         if (error) throw error;
 
-        // Respondemos al frontend enviando el ID generado
         return res.status(200).json({ success: true, id_generado });
 
     } catch (error) {
