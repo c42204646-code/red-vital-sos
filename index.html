@@ -92,12 +92,12 @@
                 <i class="fa-solid fa-print mr-2"></i> Imprimir Etiqueta
             </button>
 
-            <!-- NUEVO BLOQUE: VINCULAR CALCOMANÍA FÍSICA -->
+            <!-- BLOQUE: VINCULAR CALCOMANÍA FÍSICA -->
             <div class="w-full pt-4 border-t border-gray-200 text-left no-print">
                 <h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-link text-blue-600 mr-1"></i> Vincular Calcomanía Física</h4>
-                <p class="text-xs text-gray-500 mb-3">Si tienes una calcomanía impresa (ej. moto-001), ingrésala aquí para asociarla:</p>
+                <p class="text-xs text-gray-500 mb-3">Si tienes una calcomanía impresa (ej. a1b2c3d4), ingrésala aquí para asociarla:</p>
                 <div class="flex gap-2">
-                    <input type="text" id="inputStickerFisico" placeholder="Ej: moto-001" class="flex-1 px-3 py-2 border rounded-lg font-mono text-sm uppercase outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <input type="text" id="inputStickerFisico" placeholder="Ej: a1b2c3d4" class="flex-1 px-3 py-2 border rounded-lg font-mono text-sm uppercase outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <button onclick="vincularStickerFisico()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition shadow">
                         Vincular
                     </button>
@@ -134,18 +134,48 @@
     </div>
 
     <script>
+        // ==========================================
+        // INTERCEPTOR DE LECTURA (FASE 3)
+        // ==========================================
         const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('id');
+        const parametroId = urlParams.get('id');
+        
+        let userId = null; // Esta variable guardará la identidad real para enviar la alerta
+        let qrCodeObj = null;
+        let usuarioIdActual = null; // Variable global para guardar el ID del motorizado logueado
 
-        // Mostrar pantalla correspondiente según la URL
-        if (userId) {
-            document.getElementById('emergency-view').classList.remove('hidden');
+        if (parametroId) {
+            validarCodigoEscaneado(parametroId);
         } else {
             document.getElementById('register-view').classList.remove('hidden');
         }
 
-        let qrCodeObj = null;
-        let usuarioIdActual = null; // Variable global para guardar el ID del motorizado logueado
+        async function validarCodigoEscaneado(idEscaneado) {
+            try {
+                const response = await fetch('/api/get-sticker-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_sticker: idEscaneado })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // 1. Es un sticker físico válido y vinculado
+                    userId = data.user_id; 
+                    document.getElementById('emergency-view').classList.remove('hidden');
+                } else if (response.status === 400) {
+                    // 2. Es un sticker físico de tu inventario, pero nadie lo ha vinculado aún
+                    Swal.fire('Calcomanía Inactiva', data.error, 'warning');
+                } else {
+                    // 3. No es un sticker. Asumimos que es un QR digital antiguo que trae el ID directo del usuario
+                    userId = idEscaneado;
+                    document.getElementById('emergency-view').classList.remove('hidden');
+                }
+            } catch (error) {
+                Swal.fire('Error de conexión', 'No se pudo verificar el código con la base de datos.', 'error');
+            }
+        }
 
         // ==========================================
         // FUNCIÓN 1: REGISTRO (CONECTA CON LA API DE VERCEL)
