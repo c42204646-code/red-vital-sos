@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Conexión corregida usando tus variables exactas
 const supabase = createClient(
     process.env.SUPABASE_URL, 
-    process.env.SUPABASE_SERVICE_KEY // ¡Aquí estaba el error!
+    process.env.SUPABASE_SERVICE_KEY
 );
 
 export default async function handler(req, res) {
@@ -11,6 +10,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Método no permitido' });
     }
 
+    // Recibimos los datos del formulario web
     const { nombre, sangre, alergias, condiciones, telefono, email } = req.body;
 
     const id_generado = 'EXC-' + Math.floor(10000 + Math.random() * 90000);
@@ -24,8 +24,8 @@ export default async function handler(req, res) {
                 sangre, 
                 alergias, 
                 condiciones, 
-                telefono, 
-                email 
+                contacto_telefono: telefono, // Nombre exacto de tu columna
+                contacto_email: email        // Nombre exacto de tu columna
             }]);
 
         if (error) throw error;
